@@ -1,21 +1,19 @@
 # Imports
 import rclpy
+from pathlib import Path
 
 from rclpy.node import Node
 
 from utilities import Logger, euler_from_quaternion
-from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 
-# TODO Part 3: Import message types needed: 
-    # For sending velocity commands to the robot: Twist
-    # For the sensors: Imu, LaserScan, and Odometry
-# Check the online documentation to fill in the lines below
-from ... import Twist
-from sensor_msgs.msg import Imu
-from ... import LaserScan
-from ... import Odometry
+# Part 3: Message types for velocity commands and sensor readings.
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import Imu, LaserScan
+from nav_msgs.msg import Odometry
 
 from rclpy.time import Time
+from rclpy.utilities import remove_ros_args
 
 # You may add any other imports you may need/want to use below
 # import ...
@@ -33,63 +31,88 @@ class motion_executioner(Node):
         self.type=motion_type
         
         self.radius_=0.0
+        self.motion_start_time=None
         
         self.successful_init=False
         self.imu_initialized=False
         self.odom_initialized=False
         self.laser_initialized=False
         
-        # TODO Part 3: Create a publisher to send velocity commands by setting the proper parameters in (...)
-        self.vel_publisher=self.create_publisher(...)
+        # Part 3: Publish velocity commands with a queue depth of 10.
+        self.vel_publisher=self.create_publisher(Twist, '/cmd_vel', 10)
                 
-        # loggers
-        self.imu_logger=Logger('imu_content_'+str(motion_types[motion_type])+'.csv', headers=["acc_x", "acc_y", "angular_z", "stamp"])
-        self.odom_logger=Logger('odom_content_'+str(motion_types[motion_type])+'.csv', headers=["x","y","th", "stamp"])
-        self.laser_logger=Logger('laser_content_'+str(motion_types[motion_type])+'.csv', headers=["ranges", "angle_increment", "stamp"])
-        
-        # TODO Part 3: Create the QoS profile by setting the proper parameters in (...)
-        qos=QoSProfile(...)
+        # Keep sensor logs beside this script, regardless of the terminal's directory.
+        self.data_dir=Path(__file__).resolve().parent / 'data'
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.imu_logger=Logger(self.data_dir / ('imu_content_'+motion_types[motion_type]+'.csv'), headers=["acc_x", "acc_y", "angular_z", "stamp"])
+        self.odom_logger=Logger(self.data_dir / ('odom_content_'+motion_types[motion_type]+'.csv'), headers=["x","y","th", "stamp"])
 
-        # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
-        # IMU subscription
-        
-        ...
-        
-        # ENCODER subscription
+        # Create lidar headers on the first scan, when the number of ranges is known.
+        self.laser_logger=None
 
-        ...
-        
-        # LaserScan subscription 
-        
-        ...
-        
+        # Part 3: The Gazebo sensor publishers use RELIABLE delivery.
+        # On the real robot check: ros2 topic info /odom --verbose
+        # Also check /imu and /scan, use what's needed according to what the publishers require.
+        qos=QoSProfile(
+            depth=10,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+        )
+
+        # Part 5: Receive sensor messages using the QoS profile from Part 3.
+        self.imu_subscription=self.create_subscription(Imu, '/imu', self.imu_callback, qos)
+        self.odom_subscription=self.create_subscription(Odometry, '/odom', self.odom_callback, qos)
+        self.laser_subscription=self.create_subscription(LaserScan, '/scan', self.laser_callback, qos)
+
         self.create_timer(0.1, self.timer_callback)
 
 
-    # TODO Part 5: Callback functions: complete the callback functions of the three sensors to log the proper data.
-    # To also log the time you need to use the rclpy Time class, each ros msg will come with a header, and then
-    # inside the header you have a stamp that has the time in seconds and nanoseconds, you should log it in nanoseconds as 
-    # such: Time.from_msg(imu_msg.header.stamp).nanoseconds
-    # You can save the needed fields into a list, and pass the list to the log_values function in utilities.py
+    # Part 5: Log sensor values and message timestamps in nanoseconds.
 
     def imu_callback(self, imu_msg: Imu):
-        ...    # log imu msgs
-        
+        self.imu_logger.log_values([
+            imu_msg.linear_acceleration.x,
+            imu_msg.linear_acceleration.y,
+            imu_msg.angular_velocity.z,
+            Time.from_msg(imu_msg.header.stamp).nanoseconds,
+        ])
+        self.imu_initialized=True
+
     def odom_callback(self, odom_msg: Odometry):
-        
-        ... # log odom msgs
+        pose=odom_msg.pose.pose
+        quat=pose.orientation
+        yaw=euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
+        self.odom_logger.log_values([
+            pose.position.x, pose.position.y, yaw,
+            Time.from_msg(odom_msg.header.stamp).nanoseconds,
+        ])
+        self.odom_initialized=True
                 
     def laser_callback(self, laser_msg: LaserScan):
-        
-        ... # log laser msgs with position msg at that time
+        if self.laser_logger is None:
+            headers=['range_'+str(i) for i in range(len(laser_msg.ranges))]
+            self.laser_logger=Logger(
+                self.data_dir / ('laser_content_'+motion_types[self.type]+'.csv'),
+                headers=headers+['angle_increment', 'stamp'],
+            )
+        # One numeric column per beam; retain inf/NaN for cleaning when plotting.
+        self.laser_logger.log_values(list(laser_msg.ranges)+[
+            laser_msg.angle_increment,
+            Time.from_msg(laser_msg.header.stamp).nanoseconds,
+        ])
+        self.laser_initialized=True
                 
     def timer_callback(self):
         
+        # Wait for all three sensors before starting motion.
         if self.odom_initialized and self.laser_initialized and self.imu_initialized:
             self.successful_init=True
-            
         if not self.successful_init:
             return
+
+        # Start timing when the first motion command is generated.
+        if self.motion_start_time is None:
+            self.motion_start_time=self.get_clock().now()
         
         cmd_vel_msg=Twist()
         
@@ -104,27 +127,35 @@ class motion_executioner(Node):
             
         else:
             print("type not set successfully, 0: CIRCLE 1: SPIRAL and 2: ACCELERATED LINE")
-            raise SystemExit 
+            raise SystemExit
 
         self.vel_publisher.publish(cmd_vel_msg)
         
     
-    # TODO Part 4: Motion functions: complete the functions to generate the proper messages corresponding to the desired motions of the robot
+    # Part 4: Generate velocity commands for the three motion patterns.
 
     def make_circular_twist(self):
-        
         msg=Twist()
-        ... # fill up the twist msg for circular motion
+        # Constant speeds give a 0.5 m radius: r = v / omega.
+        msg.linear.x=0.1  # m/s
+        msg.angular.z=0.2  # rad/s
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for spiral motion
+        elapsed=(self.get_clock().now()-self.motion_start_time).nanoseconds / 1e9
+        # Increase from 0.5 m at 0.01 m/s, then circle at a 1.5 m radius.
+        self.radius_=min(0.5+0.01*elapsed, 1.5)
+        msg.linear.x=0.1
+        msg.angular.z=msg.linear.x/self.radius_
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for line motion
+        elapsed=(self.get_clock().now()-self.motion_start_time).nanoseconds / 1e9
+        # Accelerate at 0.02 m/s^2 up to 0.15 m/s, with no turning.
+        msg.linear.x=min(0.02*elapsed, 0.15)
+        msg.angular.z=0.0
         return msg
 
 import argparse
@@ -141,7 +172,8 @@ if __name__=="__main__":
 
     rclpy.init()
 
-    args = argParser.parse_args()
+    # Keep ROS options out of the motion argument parser.
+    args = argParser.parse_args(remove_ros_args()[1:])
 
     if args.motion.lower() == "circle":
 

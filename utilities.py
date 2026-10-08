@@ -23,8 +23,9 @@ class Logger:
         with open(self.filename, 'a') as file:
             vals_str=""
 
-            # TODO Part 5: Write the values from the list to the file
-            ...
+            # Part 5: Write numeric values in the same format as the header.
+            for value in values_list:
+                vals_str+=str(value)+", "
             
             vals_str+="\n"
             
@@ -61,8 +62,6 @@ class FileReader:
                     read_headers=True
                     break
             
-            next(file)
-            
             # Read each line and extract values
             for line in file:
                 values = line.strip().split(',')
@@ -79,13 +78,15 @@ class FileReader:
         return headers, table
 
 
-# TODO Part 5: Implement the conversion from Quaternion to Euler Angles
+# Part 5: Extract the robot's heading from its orientation quaternion.
 def euler_from_quaternion(quat):
     """
-    Convert quaternion (w in last place) to euler roll, pitch, yaw.
+    Return Euler yaw in radians from a unit quaternion.
     quat = [x, y, z, w]
     """
-    ... # just unpack yaw
+    # Since robot moving on flat floor, heading is 2D angle, simplify R21 and R11 expression.
+    # yaw = atan2(R21, R11)
+    x, y, z, w=quat
+    yaw=atan2(2.0*(w*z+x*y), 1.0-2.0*(y*y+z*z))
     return yaw
-
 
