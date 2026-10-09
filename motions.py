@@ -55,7 +55,7 @@ class motion_executioner(Node):
         # Also check /imu and /scan, use what's needed according to what the publishers require.
         qos=QoSProfile(
             depth=10,
-            reliability=ReliabilityPolicy.RELIABLE,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.VOLATILE,
         )
 
@@ -137,8 +137,8 @@ class motion_executioner(Node):
     def make_circular_twist(self):
         msg=Twist()
         # Constant speeds give a 0.5 m radius: r = v / omega.
-        msg.linear.x=0.1  # m/s
-        msg.angular.z=0.2  # rad/s
+        msg.linear.x=0.3  # m/s
+        msg.angular.z=0.6  # rad/s
         return msg
 
     def make_spiral_twist(self):
@@ -146,7 +146,7 @@ class motion_executioner(Node):
         elapsed=(self.get_clock().now()-self.motion_start_time).nanoseconds / 1e9
         # Increase from 0.5 m at 0.01 m/s, then circle at a 1.5 m radius.
         self.radius_=min(0.5+0.01*elapsed, 1.5)
-        msg.linear.x=0.1
+        msg.linear.x=0.3
         msg.angular.z=msg.linear.x/self.radius_
         return msg
     
@@ -154,7 +154,7 @@ class motion_executioner(Node):
         msg=Twist()
         elapsed=(self.get_clock().now()-self.motion_start_time).nanoseconds / 1e9
         # Accelerate at 0.02 m/s^2 up to 0.15 m/s, with no turning.
-        msg.linear.x=min(0.02*elapsed, 0.15)
+        msg.linear.x=min(0.1*elapsed, 0.5)
         msg.angular.z=0.0
         return msg
 
