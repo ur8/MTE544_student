@@ -123,6 +123,8 @@ The remaining part of this manual can be done in lab or at home. But it is recom
 A simple data visualization script is provided ```filePlotter.py```. You can use/adapt/modify this script or create your own to visualize the data.
 By running the script, you will be able to create plots for the data collected. 
 
+For the implemented plotting commands, organized outputs, and data checks, see [PLOTTING.md](PLOTTING.md).
+
 *Plot the sensor data that you collected for the different movements from Part 6: laser scans, IMU data, and odometry data.*.
 These plots should help you with your discussions at the end of this manual.
 

@@ -1,0 +1,178 @@
+{
+  "circle": {
+    "inferred_movement_onset_s": 1.7033063215,
+    "analysis_window_s": [
+      2.7033063215,
+      23.1995034775
+    ],
+    "steady_window_s": [
+      2.7033063215,
+      23.1995034775
+    ],
+    "median_speed_m_s": 0.2983142923708042,
+    "mean_speed_m_s": 0.2891071096498947,
+    "median_omega_rad_s": 0.5888414994779776,
+    "gyro_odom_rate_correlation": 0.9257206109887385,
+    "gyro_odom_rate_rmse_rad_s": 0.027408230983698528,
+    "yaw_change_rad": 12.394189067561205,
+    "gyro_integrated_yaw_rad": 12.384060833889091,
+    "gyro_minus_odom_yaw_deg": -0.5803050433344463,
+    "path_length_m": 6.25042902175827,
+    "logs": {
+      "odom": {
+        "file": "data/odom_content_circle.csv",
+        "sha256": "4f1413bfe4ee8c912ef37c0f1d69fbd694f863a7ceeaa2e2ffdb34223c01a85c",
+        "samples": 467,
+        "duration_s": 23.391871545,
+        "median_sample_rate_hz": 20.02543951734525,
+        "largest_gap_s": 0.112277982
+      },
+      "imu": {
+        "file": "data/imu_content_circle.csv",
+        "sha256": "e32d1d953d1ca2bb699fccb4a96470950b48cb729d9f9656a70ffbd45ab962f0",
+        "samples": 775,
+        "duration_s": 23.451467288,
+        "median_sample_rate_hz": 33.263302439542244,
+        "largest_gap_s": 0.090225946
+      },
+      "laser": {
+        "file": "data/laser_content_circle.csv",
+        "sha256": "b0324cf34f3a30174b3ea87dd6d48f6561b47702706f07abb7a15d5db3deaa06",
+        "samples": 160,
+        "duration_s": 21.971906853,
+        "median_sample_rate_hz": 7.399478400408285,
+        "largest_gap_s": 0.148765965
+      }
+    },
+    "lidar": {
+      "valid_first_scan_beams": 448,
+      "discarded_first_scan_beams": 272,
+      "cartesian_radius_max_error_m": 8.881784197001252e-16,
+      "angle_increment_deg": 0.4993045974919447,
+      "valid_range_min_m": 0.13300000131130219,
+      "valid_range_max_m": 8.944000244140625
+    },
+    "fitted_radius_m": 0.5041999049459107,
+    "circle_radial_rmse_m": 0.0012052248355174597,
+    "moving_imu_mean_ax_m_s2": -0.011854044091578248,
+    "moving_imu_mean_ay_m_s2": 0.178548500404048,
+    "median_odom_centripetal_acceleration_m_s2": 0.17587578971605755
+  },
+  "spiral": {
+    "inferred_movement_onset_s": 2.234762768,
+    "analysis_window_s": [
+      3.234762768,
+      77.541707702
+    ],
+    "steady_window_s": [
+      3.234762768,
+      77.541707702
+    ],
+    "median_speed_m_s": 0.29657877607854793,
+    "mean_speed_m_s": 0.2633655690782471,
+    "median_omega_rad_s": 0.30559260768246627,
+    "gyro_odom_rate_correlation": 0.9896201856153858,
+    "gyro_odom_rate_rmse_rad_s": 0.018832794074281303,
+    "yaw_change_rad": 23.558143191024246,
+    "gyro_integrated_yaw_rad": 23.55331637151217,
+    "gyro_minus_odom_yaw_deg": -0.2765563865133232,
+    "path_length_m": 19.787664914177963,
+    "logs": {
+      "odom": {
+        "file": "data/odom_content_spiral.csv",
+        "sha256": "b4073f7fd7a6efacf5ee631e4a0759ed1572b853566fe86393bcdf276d454279",
+        "samples": 1554,
+        "duration_s": 77.742874347,
+        "median_sample_rate_hz": 20.01344142753156,
+        "largest_gap_s": 0.112020165
+      },
+      "imu": {
+        "file": "data/imu_content_spiral.csv",
+        "sha256": "16278c84a6310d778dc94b187c885e2718fc17cfa04a0d43e287b334b30bda2d",
+        "samples": 2562,
+        "duration_s": 77.780655124,
+        "median_sample_rate_hz": 33.25559947807332,
+        "largest_gap_s": 0.065689018
+      },
+      "laser": {
+        "file": "data/laser_content_spiral.csv",
+        "sha256": "6f0a858489ec29ac1331cad234a493d679f085d082afb67397f5d357ea571ff3",
+        "samples": 548,
+        "duration_s": 75.633884908,
+        "median_sample_rate_hz": 7.398914932847485,
+        "largest_gap_s": 0.282395509
+      }
+    },
+    "lidar": {
+      "valid_first_scan_beams": 397,
+      "discarded_first_scan_beams": 323,
+      "cartesian_radius_max_error_m": 8.881784197001252e-16,
+      "angle_increment_deg": 0.4993045974919447,
+      "valid_range_min_m": 0.13199999928474426,
+      "valid_range_max_m": 9.119999885559082
+    },
+    "moving_radius_fit_slope_m_s": 0.010561323400400252,
+    "moving_radius_fit_intercept_m": 0.49751005899034717,
+    "moving_radius_fit_rmse_m": 0.05271807323201991,
+    "low_speed_duration_s": 8.646509941000012,
+    "low_speed_time_fraction": 0.11631770088349352,
+    "radius_fit_samples": 1198
+  },
+  "line": {
+    "inferred_movement_onset_s": 1.652805115,
+    "analysis_window_s": [
+      2.652805115,
+      9.299794987000002
+    ],
+    "steady_window_s": [
+      7.152805115,
+      9.299794987000002
+    ],
+    "median_speed_m_s": 0.4429846106257667,
+    "mean_speed_m_s": 0.4430742150703834,
+    "median_omega_rad_s": -0.0529883839131001,
+    "gyro_odom_rate_correlation": 0.9240122745130616,
+    "gyro_odom_rate_rmse_rad_s": 0.011112940049809587,
+    "yaw_change_rad": -0.21029231502401413,
+    "gyro_integrated_yaw_rad": -0.2095594539287045,
+    "gyro_minus_odom_yaw_deg": 0.041989847730576145,
+    "path_length_m": 2.5270447510515,
+    "logs": {
+      "odom": {
+        "file": "data/odom_content_line.csv",
+        "sha256": "971799c27024c4d738a2d3c55b90c7585501a7c97394c3b6931a4dbd8c39228f",
+        "samples": 191,
+        "duration_s": 9.485129238,
+        "median_sample_rate_hz": 20.030324509184187,
+        "largest_gap_s": 0.07067666
+      },
+      "imu": {
+        "file": "data/imu_content_line.csv",
+        "sha256": "25922195bbcd11882db4b203d6037d743a29ab653129471299168c3e59dba8c9",
+        "samples": 316,
+        "duration_s": 9.563693739,
+        "median_sample_rate_hz": 33.254586472566295,
+        "largest_gap_s": 0.060277322
+      },
+      "laser": {
+        "file": "data/laser_content_line.csv",
+        "sha256": "02ec90a829a8fe621c7a0f20eba8a770a2fd7553477ec0484d12720e647eafc3",
+        "samples": 61,
+        "duration_s": 8.253520121,
+        "median_sample_rate_hz": 7.400834999948953,
+        "largest_gap_s": 0.147686422
+      }
+    },
+    "lidar": {
+      "valid_first_scan_beams": 418,
+      "discarded_first_scan_beams": 302,
+      "cartesian_radius_max_error_m": 8.881784197001252e-16,
+      "angle_increment_deg": 0.4993045974919447,
+      "valid_range_min_m": 0.13199999928474426,
+      "valid_range_max_m": 9.727999687194824
+    },
+    "end_cross_track_from_initial_heading_m": -0.2138732763163762,
+    "ramp_fit_acceleration_m_s2": 0.09535823079417965,
+    "ramp_imu_mean_ax_m_s2": 0.11079046824820955
+  }
+}

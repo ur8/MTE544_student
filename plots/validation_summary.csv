@@ -1,0 +1,10 @@
+motion,sensor,source,samples,duration_s,duplicate_timestamps,scan_index,discarded_scan_beams
+circle,odom,/home/uday/Downloads/MTE544_student/data/odom_content_circle.csv,467,23.391872,0,,
+circle,imu,/home/uday/Downloads/MTE544_student/data/imu_content_circle.csv,775,23.451467,0,,
+circle,laser,/home/uday/Downloads/MTE544_student/data/laser_content_circle.csv,160,21.971907,0,0,272
+spiral,odom,/home/uday/Downloads/MTE544_student/data/odom_content_spiral.csv,1554,77.742874,0,,
+spiral,imu,/home/uday/Downloads/MTE544_student/data/imu_content_spiral.csv,2562,77.780655,0,,
+spiral,laser,/home/uday/Downloads/MTE544_student/data/laser_content_spiral.csv,548,75.633885,0,0,323
+line,odom,/home/uday/Downloads/MTE544_student/data/odom_content_line.csv,191,9.485129,0,,
+line,imu,/home/uday/Downloads/MTE544_student/data/imu_content_line.csv,316,9.563694,0,,
+line,laser,/home/uday/Downloads/MTE544_student/data/laser_content_line.csv,61,8.253520,0,0,302
