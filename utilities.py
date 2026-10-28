@@ -1,4 +1,4 @@
-from math import atan2, asin, sqrt
+from math import atan2, asin, sqrt, pi
 
 M_PI=3.1415926535
 
@@ -100,28 +100,41 @@ def euler_from_quaternion(quat):
     return yaw
 
 
-#TODO Part 4: Implement the calculation of the linear error
+#TODO - DONE - Part 4: Implement the calculation of the linear error
 def calculate_linear_error(current_pose, goal_pose):
+    # returns the straight line distance to the goal in metres
         
     # Compute the linear error in x and y
     # Remember that current_pose = [x,y, theta, time stamp] and goal_pose = [x,y]
     # Remember to use the Euclidean distance to calculate the error.
-    error_linear= ...
+
+    dx = goal_pose[0] - current_pose[0] 
+    dy = goal_pose[1] - current_pose[1] 
+
+    # Euclidean distance gives remaining distance to the goal 
+    error_linear = sqrt(dx*dx + dy*dy)
 
     return error_linear
 
-#TODO Part 4: Implement the calculation of the angular error
+#TODO - DONE - Part 4: Implement the calculation of the angular error
 def calculate_angular_error(current_pose, goal_pose):
+    # return the signed heading error to the goal in radians 
 
     # Compute the linear error in x and y
     # Remember that current_pose = [x,y, theta, time stamp] and goal_pose = [x,y]
     # Use atan2 to find the desired orientation
     # Remember that this function returns the difference in orientation between where the robot currently faces and where it should face to reach the goal
+    dx = goal_pose[0] - current_pose[0] 
+    dy = goal_pose[1] - current_pose[1]
 
-    error_angular = ...
+    # find direction from current position towards goal
+    desired_heading = atan2(dy/dx)
+
+    # positive error = CCW turn 
+    error_angular = desired_heading - current_pose[2]
 
     # Remember to handle the cases where the angular error might exceed the range [-π, π]
-
-    ...
+    # wrap to [-pi, pi), so that the robot can take the shorter turning direction 
+    error_angular = ((error_angular + pi) % (2.0 * pi)) - pi 
     
     return error_angular

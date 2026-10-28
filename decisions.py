@@ -6,11 +6,12 @@ import sys
 from utilities import euler_from_quaternion, calculate_angular_error, calculate_linear_error
 from pid import PID_ctrl
 
-from rclpy import init, spin, spin_once
+from rclpy import init, spin, spin_once, try_shutdown
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 
-from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, HistoryPolicy
+from rclpy.signals import SignalHandlerOptions
 from nav_msgs.msg import Odometry as odom
 
 from math import hypot
@@ -30,8 +31,8 @@ class decision_maker(Node):
 
         super().__init__("decision_maker")
 
-        #TODO Part 4: Create a publisher for the topic responsible for robot's motion
-        self.publisher=... 
+        #TODO - DONE - Part 4: Create a publisher for the topic responsible for robot's motion
+        self.publisher= self.create_publisher(publisher_msg, publishing_topic, qos_publisher)
 
         publishing_period=1/rate
         
@@ -98,8 +99,11 @@ class decision_maker(Node):
         
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
 
-        #TODO Part 4: Publish the velocity to move the robot
-        ... 
+        #TODO - DONE - Part 4: Publish the velocity to move the robot
+        # forward motion using the robot's x-axis, turning motion is with its vertical z-axis 
+        vel_msg.linear.x = float(velocity)      # m/s 
+        vel_msg.angular.z = float(yaw_rate)     # rad/s
+        self.publishr.publish(vel_msg) 
 
 import argparse
 
@@ -108,16 +112,35 @@ def main(args=None):
     
     init()
 
+    # COMMENT THIS OUT FOR PART 4 - ecause odometry subscription has its own profile in localization.py 
     # TODO - DONE - Part 3: You migh need to change the QoS profile based on whether you're using the real robot or in simulation.
     # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
-    odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)   # best effort reliability, change to reliable if needed
-    
+    # odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)   # best effort reliability, change to reliable if needed
 
-    # TODO Part 4: instantiate the decision_maker with the proper parameters for moving the robot
+    # TODO - DONE - Part 4: instantiate the decision_maker with the proper parameters for moving the robot
+    cmd_qos = QoSProfile(reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.VOLATILE, history=HistoryPolicy.KEEP_LAST, depth=10)   # using the reliability for simulation
+
+
+
+
     if args.motion.lower() == "point":
-        DM=decision_maker(...)
+        DM = decision_maker(
+            publisher_msg=Twist,
+            publishing_topic="/cmd_vel",
+            qos_publisher=cmd_qos,
+            goalPoint=(-1.0, -0.5),
+            rate=10,
+            motion_type=POINT_PLANNER,
+        )
     elif args.motion.lower() == "trajectory":
-        DM=decision_maker(...)
+        DM = decision_maker(
+            publisher_msg=Twist,
+            publishing_topic="/cmd_vel",
+            qos_publisher=cmd_qos,
+            goalPoint=None,  # Trajectory planning does not use a single goal point.
+            rate=10,
+            motion_type=TRAJECTORY_PLANNER,
+        )
     else:
         print("invalid motion type", file=sys.stderr)        
     
