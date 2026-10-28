@@ -103,7 +103,7 @@ class decision_maker(Node):
         # forward motion using the robot's x-axis, turning motion is with its vertical z-axis 
         vel_msg.linear.x = float(velocity)      # m/s 
         vel_msg.angular.z = float(yaw_rate)     # rad/s
-        self.publishr.publish(vel_msg) 
+        self.publisher.publish(vel_msg) 
 
 import argparse
 

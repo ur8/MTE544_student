@@ -128,7 +128,7 @@ def calculate_angular_error(current_pose, goal_pose):
     dy = goal_pose[1] - current_pose[1]
 
     # find direction from current position towards goal
-    desired_heading = atan2(dy/dx)
+    desired_heading = atan2(dy, dx)
 
     # positive error = CCW turn 
     error_angular = desired_heading - current_pose[2]
