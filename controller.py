@@ -18,7 +18,7 @@ class controller:
     def __init__(self, klp=0.2, klv=0.2, kli=0.2, kap=0.2, kav=0.2, kai=0.2):
         
         # TODO Part 5 and 6: Modify the below lines to test your PD, PI, and PID controller
-        controller_type = PID   # P, PD, PI, or PID for both motion controllers.
+        controller_type = P   # P, PD, PI, or PID for both motion controllers.
         self.PID_linear=PID_ctrl(controller_type, klp, klv, kli, filename_="linear.csv")
         self.PID_angular=PID_ctrl(controller_type, kap, kav, kai, filename_="angular.csv")
 
