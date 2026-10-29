@@ -52,6 +52,7 @@ class PID_ctrl:
         # Compute the error derivative
         dt_avg=0
         error_dot=0
+        valid_intervals=0
         
         for i in range(1, len(self.history)):
             
@@ -65,20 +66,49 @@ class PID_ctrl:
             # use constant dt if the messages arrived inconsistent
             # for example dt=0.1 overwriting the calculation          
             
-            # TODO Part 5: calculate the error dot 
-            # error_dot+= ... 
+            # TODO - DONE - Part 5: calculate the error dot 
+            # Repeated timestamps do not define a derivative.
+            if dt <= 0.0:
+                continue
+
+            error_change = self.history[i][0] - self.history[i - 1][0]
+            error_dot += error_change / dt
+            valid_intervals += 1 
+
             
-        error_dot/=len(self.history)
-        dt_avg/=len(self.history)
+        # average the interval slopes, not the number of samples 
+        if valid_intervals > 0:
+            error_dot /= valid_intervals
         
         # Compute the error integral
         sum_=0
-        for hist in self.history:
-            # TODO Part 5: Gather the integration
-            # sum_+=...
-            pass
-        
-        error_int=sum_*dt_avg
+        # TODO - DONE - Part 5: Gather the integration       
+        if not hasattr(self, "error_integral"):
+            self.error_integral = 0.0
+
+            # On the first calculation, include all available startup intervals.
+            first_interval = 1
+        else:
+            # On later calculations, add only the newest interval.
+            first_interval = len(self.history) - 1
+
+        for i in range(first_interval, len(self.history)):
+            t0 = Time.from_msg(self.history[i - 1][1])
+            t1 = Time.from_msg(self.history[i][1])
+            dt = (t1.nanoseconds - t0.nanoseconds) / 1e9
+
+            # Skip repeated or backwards timestamps.
+            if dt <= 0.0:
+                continue
+
+            e0 = self.history[i - 1][0]
+            e1 = self.history[i][0]
+
+            # Add the area under the error curve over this interval.
+            self.error_integral += 0.5 * (e0 + e1) * dt
+
+        # Use the accumulated result for logging and the controller.
+        error_int = self.error_integral
         
         # TODO - DONE - Part 4: Log your errors
         # record error and its timestamp so we can plot afterwards
@@ -93,15 +123,22 @@ class PID_ctrl:
         if self.type == P:
             return self.kp * latest_error
         
-        # TODO Part 5: Implement the control law corresponding to each type of controller
+        # TODO - DONE - Part 5: Implement the control law corresponding to each type of controller
         elif self.type == PD:
-            pass
-            # return ... # complete
+            return (
+                self.kp * latest_error
+                + self.kv * error_dot
+            )
         
         elif self.type == PI:
-            pass
-            # return ... # complete
+            return (
+                self.kp * latest_error
+                + self.ki * error_int
+            )
         
         elif self.type == PID:
-            pass
-            # return ... # complete
+            return (
+                self.kp * latest_error
+                + self.kv * error_dot
+                + self.ki * error_int
+            )

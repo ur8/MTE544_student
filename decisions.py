@@ -37,10 +37,16 @@ class decision_maker(Node):
         publishing_period=1/rate
         
         # Instantiate the controller
-        # TODO Part 5: Tune your parameters here
-    
+        # TODO - DONE - Part 5: Tune your parameters here
         if motion_type == POINT_PLANNER:
-            self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6)
+            self.controller = controller(
+                klp=0.2,
+                klv=0.05,
+                kli=0.005,
+                kap=0.8,
+                kav=0.1,
+                kai=0.01,
+            )
             self.planner=planner(POINT_PLANNER)    
     
     
