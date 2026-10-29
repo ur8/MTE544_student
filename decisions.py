@@ -128,7 +128,7 @@ def main(args=None):
             publisher_msg=Twist,
             publishing_topic="/cmd_vel",
             qos_publisher=cmd_qos,
-            goalPoint=(-1.0, -0.5),
+            goalPoint=(-1.0, -0.8),
             rate=10,
             motion_type=POINT_PLANNER,
         )
