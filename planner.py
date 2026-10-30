@@ -28,7 +28,7 @@ class planner:
     # TODO - DONE - Part 6: Implement the trajectories here
     def trajectory_planner(self):
         # Select the curve to generate for this run.
-        trajectory_type = "parabola"  # "parabola" or "sigmoid"
+        trajectory_type = "sigmoid"  # "parabola" or "sigmoid"
 
         if trajectory_type == "parabola":
             # Sample y = x^2 over the required interval.
