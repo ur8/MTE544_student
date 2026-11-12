@@ -1,0 +1,158 @@
+{
+  "state_order": [
+    "x",
+    "y",
+    "theta",
+    "omega",
+    "v",
+    "vdot"
+  ],
+  "measurement_order": [
+    "odom_v",
+    "odom_w",
+    "imu_ax",
+    "imu_ay"
+  ],
+  "Q": [
+    [
+      0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.5,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.5,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.5,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.5
+    ]
+  ],
+  "R": [
+    [
+      0.1,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.1,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.1,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.1
+    ]
+  ],
+  "initial_P": [
+    [
+      0.1,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.1,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.1,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.1,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.1,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.1
+    ]
+  ],
+  "initial_state": [
+    6.192537949176927e-05,
+    3.274521672339213e-07,
+    8.144450899082127e-06,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "nominal_dt_s": 0.1,
+  "timing": "Prediction uses differences between accepted odometry header stamps; first pair only updates.",
+  "odom_topic": "/odom",
+  "imu_topic": "/imu",
+  "sync_slop_s": 0.1,
+  "sync_queue_size": 10,
+  "frame_assumption": "Planar motion; IMU acceleration axes aligned with the robot body, gravity absent from horizontal components.",
+  "initialization": "Pose anchored once to first synchronized odometry pose; velocity/acceleration prior is zero."
+}

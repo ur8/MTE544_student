@@ -1,0 +1,72 @@
+{
+  "source": "test_results/lab3_spiral_baseline/robot_pose.csv",
+  "source_sha256": "6355ed0b26b2adda775e349e66f57f4b19b62a43c2b6f4a51d4711ef1516d4b3",
+  "settings_sha256": "2ff555f6aeb220279335cfe76ec89abe177e3f0aa152a47802f7e75bfcd4fba3",
+  "filter_code_sha256": "dd6ce860e96fff9b35f316f769db2591d664364c22a3355a6af8251b803b5e3f",
+  "samples": 795,
+  "duration_sim_s": 26.996,
+  "finite_all_columns": true,
+  "interval_s_min_median_max": [
+    0.034,
+    0.034,
+    0.034
+  ],
+  "effective_rate_hz": 29.411764705882355,
+  "sensor_stamp_separation_ms_max": 9.0,
+  "replay_max_absolute_error_state_order": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "replayed_covariance_min_eigenvalue": 0.08333333333333333,
+  "replayed_final_covariance_diagonal": [
+    549.8359689707057,
+    922.0744617828267,
+    397.44030697174327,
+    0.22086494937953904,
+    0.22079637990040743,
+    0.30899321363528126
+  ],
+  "position_difference_rms_cm": 2.5550958368922787,
+  "position_difference_max_cm": 4.775507086226534,
+  "position_difference_final_cm": 1.4317836688043863,
+  "heading_difference_rms_deg": 0.9008033876464585,
+  "heading_difference_max_abs_deg": 1.8297575783935827,
+  "steady_window_s": [
+    15,
+    26
+  ],
+  "steady_samples": 323,
+  "steady_comparisons": {
+    "odom_vx": {
+      "estimated_column": "kf_vx",
+      "raw_std": 6.043955185028197e-05,
+      "estimated_std": 0.02187499888573729,
+      "rms_difference": 0.021859618872298092
+    },
+    "odom_w": {
+      "estimated_column": "kf_w",
+      "raw_std": 0.00047810777169870263,
+      "estimated_std": 0.0215620341189769,
+      "rms_difference": 0.02174341169746056
+    },
+    "imu_ax": {
+      "estimated_column": "kf_ax",
+      "raw_std": 0.028928573842969575,
+      "estimated_std": 0.02085450166713315,
+      "rms_difference": 0.012329396962475732
+    },
+    "imu_ay": {
+      "estimated_column": "kf_ay",
+      "raw_std": 0.07519142171432316,
+      "estimated_std": 0.043208440178927714,
+      "rms_difference": 0.034022314293212175
+    }
+  },
+  "steady_imu_ax_mean_m_s2": -0.0583162201310179,
+  "steady_odom_dv_dt_mean_m_s2": -1.4577568100859064e-06,
+  "comparison_limit": "Odometry is not independent ground truth. Estimate differences are not absolute localization errors."
+}

@@ -3,7 +3,9 @@ import sys
 from utilities import euler_from_quaternion, calculate_angular_error, calculate_linear_error
 from pid import PID_ctrl
 
-from rclpy import init, spin, spin_once
+from rclpy import init, shutdown
+from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
+from rclpy.utilities import remove_ros_args
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 
@@ -32,8 +34,9 @@ class decision_maker(Node):
         self.reachThreshold=0.01
 
 
-        # TODO Part 3: use the Kalman Filter
-        self.localizer=localization(...)
+        # Feed estimated x/y/heading to the existing controller. Sensor timing
+        # is measured in fusion_callback; this is only the nominal interval.
+        self.localizer=localization(type=kalmanFilter, dt=publishing_period)
         
         if motion_type==POINT_PLANNER:
             self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6)      
@@ -62,10 +65,8 @@ class decision_maker(Node):
 
     def timerCallback(self):
         
-        spin_once(self.localizer)
-
         if self.localizer.getPose() is  None:
-            print("waiting for odom msgs ....")
+            print("waiting for synchronized odom/IMU msgs ....")
             return
         
         
@@ -106,35 +107,33 @@ class decision_maker(Node):
 
 import argparse
 def main(args=None):
-    
-    
-    init()
-    
-    
-    if args.motion == "point":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=POINT_PLANNER)
-    elif args.motion == "trajectory":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=TRAJECTORY_PLANNER)
-    elif args.motion == "spiral":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=SPIRAL_4TUNE)
-    else:
-        print("invalid motion type", file=sys.stderr)
-        return
-
-
-
+    # Keep ROS parameter/remapping flags for rclpy, but not argparse.
+    argv = sys.argv if args is None else ["decisions.py", *args]
+    parser = argparse.ArgumentParser(description="Lab 3 EKF motion tests")
+    parser.add_argument("--motion", choices=["point", "trajectory", "spiral"], default="spiral")
+    options = parser.parse_args(remove_ros_args(args=argv)[1:])
+    init(args=argv)
+    motion_types = {"point": POINT_PLANNER, "trajectory": TRAJECTORY_PLANNER, "spiral": SPIRAL_4TUNE}
+    DM = decision_maker(Twist, "/cmd_vel", 10, motion_type=motion_types[options.motion])
+    # Spin both nodes together. Nested spin_once in a timer can block control
+    # while waiting for a sensor; the executor services sensor callbacks too.
+    executor = SingleThreadedExecutor()
+    executor.add_node(DM)
+    executor.add_node(DM.localizer)
     try:
-        spin(DM)
+        executor.spin()
     except SystemExit:
         print(f"reached there successfully {DM.localizer.pose}")
-
-
-
-
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        # Stop open-loop spiral motion as well as point control on exit.
+        if DM.context.ok():
+            DM.publisher.publish(Twist())
+        executor.shutdown()
+        DM.localizer.destroy_node()
+        DM.destroy_node()
+        if DM.context.ok():
+            shutdown()
 if __name__=="__main__":
-    
-    argParser=argparse.ArgumentParser(description="point or trajectory") 
-    argParser.add_argument("--motion", type=str, default="spiral")
-    args = argParser.parse_args()
-
-    main(args)
+    main()

@@ -1,0 +1,28 @@
+{
+  "run": "lab3_point_check_20261112_121717_833562",
+  "goal_xy_m": [
+    -1,
+    -1
+  ],
+  "samples": 870,
+  "simulation_duration_s": 29.546,
+  "final_ekf_xy_m": [
+    -0.9900789481110737,
+    -0.9997240357462633
+  ],
+  "final_odometry_xy_m": [
+    -0.994989031323704,
+    -1.0005443084575074
+  ],
+  "replay_max_absolute_difference": 0,
+  "position_goal_tolerance_cm": 1.0,
+  "source_csv_sha256": "3c8d9f5d86250aee8279140bcaeb88e5783910a6d241ac11cf9c5cacf7b729b8",
+  "kf_final_distance_to_goal_cm": 0.992488926145321,
+  "kf_minimum_distance_to_goal_cm": 0.992488926145321,
+  "kf_projected_overshoot_cm": 0.0,
+  "kf_path_length_m": 2.158727194347653,
+  "odom_final_distance_to_goal_cm": 0.5040444303008815,
+  "odom_minimum_distance_to_goal_cm": 0.5040444303008815,
+  "odom_projected_overshoot_cm": 0.0,
+  "odom_path_length_m": 2.1557956977099266
+}

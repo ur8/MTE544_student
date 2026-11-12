@@ -1,0 +1,100 @@
+{
+  "source_csv": "robot_pose.csv",
+  "source_sha256": "55454c1f178457e51f323ef18bb53e23671dc2e68e31f85b0c2365c421b366ff",
+  "samples": 832,
+  "elapsed_sim_s": 28.254,
+  "effective_sample_rate_hz": 29.41176470588235,
+  "interval_s_min_median_max": [
+    0.034,
+    0.034,
+    0.034
+  ],
+  "max_sensor_stamp_separation_ms": 9.0,
+  "position_difference_rms_cm": 2.765523340216257,
+  "position_difference_max_cm": 4.336012287403125,
+  "heading_difference_rms_deg": 0.9331389812320624,
+  "Q": [
+    [
+      0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.5,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.5,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.5,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.5
+    ]
+  ],
+  "R": [
+    [
+      0.1,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.1,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.1,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.1
+    ]
+  ],
+  "comparison_limit": "Differences from odometry are not errors against independent ground truth.",
+  "preprocessing": "All samples retained; no smoothing. Headings unwrapped only for continuous time plots.",
+  "rms_measurement_estimate_difference": {
+    "odom_vx": 0.020321902297651864,
+    "odom_w": 0.019657154625809848,
+    "imu_ax": 0.005655296433698559,
+    "imu_ay": 0.0243619887728919
+  }
+}
