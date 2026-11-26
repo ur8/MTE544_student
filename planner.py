@@ -28,23 +28,23 @@ class planner:
     def point_planner(self, endPose):
         return endPose
 
-def initTrajectoryPlanner(self):
-    # TODO PART 5 Create the cost-map, the laser_sig is 
-    # the standard deviation for the gausiian for which
-    # the mean is located on the occupant grid. 
+    def initTrajectoryPlanner(self):
+        # TODO PART 5 Create the cost-map, the laser_sig is 
+        # the standard deviation for the gausiian for which
+        # the mean is located on the occupant grid. 
 
-    # Gaussian width controls the blocked margin around obstacles.
-    self.m_utilites = mapManipulator(
-        filename_=self.mapName,
-        laser_sig=0.23
-    )
+        # Gaussian width controls the blocked margin around obstacles.
+        self.m_utilites = mapManipulator(
+            filename_=self.mapName,
+            laser_sig=0.23
+        )
 
-    self.costMap = self.m_utilites.make_likelihood_field()
+        self.costMap = self.m_utilites.make_likelihood_field()
 
-    # Our saved map uses 205 for unknown pixels.
-    # Prevent planning through unexplored space.
-    unknown = self.m_utilites.getMap() == 205
-    self.costMap[unknown] = 1.0
+        # Our saved map uses 205 for unknown pixels.
+        # Prevent planning through unexplored space.
+        unknown = self.m_utilites.getMap() == 205
+        self.costMap[unknown] = 1.0
         
 
     def trajectory_planner(self, startPoseCart, endPoseCart):

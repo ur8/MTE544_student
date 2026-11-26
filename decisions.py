@@ -29,7 +29,7 @@ from geometry_msgs.msg import PoseStamped
 class decision_maker(Node):
     
     
-    def __init__(self, publisher_msg, publishing_topic, qos_publisher, rate=10, motion_type=POINT_PLANNER):
+    def __init__(self, publisher_msg, publishing_topic, qos_publisher, rate=10, motion_type=POINT_PLANNER, heuristic="euclidean"):
 
         super().__init__("decision_maker")
 
@@ -228,4 +228,5 @@ if __name__=="__main__":
         default="euclidean"
     )
 
+    args = argParser.parse_args()
     main(args)
