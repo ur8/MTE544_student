@@ -29,7 +29,7 @@ from geometry_msgs.msg import PoseStamped
 class decision_maker(Node):
     
     
-    def __init__(self, publisher_msg, publishing_topic, qos_publisher, rate=10, motion_type=POINT_PLANNER):
+    def __init__(self, publisher_msg, publishing_topic, qos_publisher, rate=10, motion_type=POINT_PLANNER, heuristic="euclidean"):
 
         super().__init__("decision_maker")
 
@@ -43,10 +43,12 @@ class decision_maker(Node):
         publishing_period=1/rate
 
         # TODO PART 5 choose your threshold
-        self.reachThreshold=...
+        # Stop when within 10 cm of the final waypoint.
+        self.reachThreshold = 0.10
 
         # TODO PART 5 your localization type
-        self.localizer=localization(...)
+        # Use odometry directly; allowed by the lab instructions.
+        self.localizer = localization(rawSensors)
 
 
         
@@ -57,8 +59,16 @@ class decision_maker(Node):
         
         elif motion_type==TRAJECTORY_PLANNER:
             # TODO PART 5 Put the gains that you concluded from lab 2
-            self.controller=trajectoryController(...)      
-            self.planner=planner(TRAJECTORY_PLANNER)
+            # Initial proportional gains for simulation; tune during testing.
+            self.controller = trajectoryController(
+                klp=0.2, klv=0.0, kli=0.0,
+                kap=0.8, kav=0.0, kai=0.0
+            )     
+            self.planner = planner(
+                TRAJECTORY_PLANNER,
+                mapName="room",
+                heuristic=heuristic
+            )
         
         else:
             print("Error! you don't have this type of planner", file=sys.stderr)
@@ -76,20 +86,40 @@ class decision_maker(Node):
 
     # This is for the rviz2 interface
     def designPathFor(self, msg: PoseStamped):
-        
-        spin_once(self.localizer)
-        
-        if self.localizer.getPose() is  None:
+        # Process available odometry without blocking.
+        spin_once(self.localizer, timeout_sec=0.0)
+
+        pose = self.localizer.getPose()
+        if pose is None:
             print("waiting for odom msgs ....")
             return
-        
-        self.goal=self.planner.plan([self.localizer.getPose()[0], self.localizer.getPose()[1]],
-                                     [msg.pose.position.x, msg.pose.position.y])
+
+        # Stop the previous motion before planning a new route.
+        self.publisher.publish(Twist())
+        self.goal = None
+        self.publishPathOnRviz2([])
+
+        path = self.planner.plan(
+            [pose[0], pose[1]],
+            [msg.pose.position.x, msg.pose.position.y]
+        )
+
+        if not path:
+            print("No valid path found. Choose a goal in mapped free space.")
+            return
+
+        # Start each route with fresh controller error history.
+        self.controller.PID_linear.history.clear()
+        self.controller.PID_angular.history.clear()
+
+        self.goal = path
+        self.publishPathOnRviz2(path)
 
     
     def timerCallback(self):
         
-        spin_once(self.localizer)
+        # Keep the control timer responsive when no new odometry is available.
+        spin_once(self.localizer, timeout_sec=0.0)
 
         if self.localizer.getPose() is  None:
             print("waiting for odom msgs ....")
@@ -126,9 +156,10 @@ class decision_maker(Node):
         velocity, yaw_rate = self.controller.\
             vel_request(self.localizer.getPose(), self.goal, True)
 
-        
-        vel_msg.linear.x=velocity
-        vel_msg.angular.z=yaw_rate
+                
+        # Limit forward speed and turning speed in both directions.
+        vel_msg.linear.x = float(max(0.0, min(0.1, velocity)))
+        vel_msg.angular.z = float(max(-0.5, min(0.5, yaw_rate)))
         
         self.publisher.publish(vel_msg)
         self.publishPathOnRviz2(self.goal)
@@ -170,7 +201,11 @@ def main(args=None):
     if args.motion == "point":
         DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=POINT_PLANNER)
     elif args.motion == "trajectory":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=TRAJECTORY_PLANNER)
+        DM = decision_maker(
+            Twist, "/cmd_vel", 10,
+            motion_type=TRAJECTORY_PLANNER,
+            heuristic=args.heuristic
+        )
     else:
         print("invalid motion type", file=sys.stderr)
 
@@ -187,6 +222,11 @@ def main(args=None):
 if __name__=="__main__":
     argParser=argparse.ArgumentParser(description="point or trajectory") 
     argParser.add_argument("--motion", type=str, default="trajectory")
-    args = argParser.parse_args()
+    argParser.add_argument(
+        "--heuristic",
+        choices=["manhattan", "euclidean"],
+        default="euclidean"
+    )
 
+    args = argParser.parse_args()
     main(args)

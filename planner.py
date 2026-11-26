@@ -5,10 +5,11 @@ from a_star import *
 POINT_PLANNER=0; TRAJECTORY_PLANNER=1
 
 class planner:
-    def __init__(self, type_, mapName="room"):
-
-        self.type=type_
-        self.mapName=mapName
+    def __init__(self, type_, mapName="room", heuristic="euclidean"):
+        self.type = type_
+        self.mapName = mapName
+        self.heuristic = heuristic
+        self.costMap = None
 
     
     def plan(self, startPose, endPose):
@@ -16,9 +17,11 @@ class planner:
         if self.type==POINT_PLANNER:
             return self.point_planner(endPose)
         
-        elif self.type==TRAJECTORY_PLANNER:
-            self.costMap=None
-            self.initTrajectoryPlanner()
+        elif self.type == TRAJECTORY_PLANNER:
+            # Build the static cost map once, then reuse it for new goals.
+            if self.costMap is None:
+                self.initTrajectoryPlanner()
+
             return self.trajectory_planner(startPose, endPose)
 
 
@@ -26,14 +29,22 @@ class planner:
         return endPose
 
     def initTrajectoryPlanner(self):
-
-
         # TODO PART 5 Create the cost-map, the laser_sig is 
         # the standard deviation for the gausiian for which
         # the mean is located on the occupant grid. 
-        self.m_utilites=mapManipulator(laser_sig=...)
-            
-        self.costMap=self.m_utilites.make_likelihood_field()
+
+        # Gaussian width controls the blocked margin around obstacles.
+        self.m_utilites = mapManipulator(
+            filename_=self.mapName,
+            laser_sig=0.23
+        )
+
+        self.costMap = self.m_utilites.make_likelihood_field()
+
+        # Our saved map uses 205 for unknown pixels.
+        # Prevent planning through unexplored space.
+        unknown = self.m_utilites.getMap() == 205
+        self.costMap[unknown] = 1.0
         
 
     def trajectory_planner(self, startPoseCart, endPoseCart):
@@ -47,14 +58,29 @@ class planner:
         startPose=self.m_utilites.position_2_cell(startPoseCart)
         endPose=self.m_utilites.position_2_cell(endPoseCart)
         
-        # TODO PART 5 convert the cell pixels into the cartesian coordinates
+        # TODO PART 5 convert the cell pixels into the cartesian coordinates  
+        # A* returns cells ordered from start to goal.
+        cell_path = search(
+            self.costMap,
+            startPose,
+            endPose,
+            heuristic=self.heuristic
+        )
+
+        if not cell_path:
+            return []  # No valid route was found.
         
-        Path = list(map(...))
+        Path = [
+            list(self.m_utilites.cell_2_position(cell))
+            for cell in cell_path
+        ]
 
 
 
         # TODO PART 5 return the path as list of [x,y]
-        return ...
+        # Convert cells back into [x, y] waypoints in metres.
+
+        return Path
 
 
 
