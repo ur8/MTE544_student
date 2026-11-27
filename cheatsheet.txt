@@ -1,0 +1,72 @@
+
+create 4 terminals
+Paste this into all terminals for setup. 
+
+if need to activate venv 
+source ~/.venvs/mte544/bin/activate
+used this cause VM's sys version of scikit-learn crashed, so used venv to fix
+
+cd ~/MTE544_student
+source /opt/ros/humble/setup.bash
+export TURTLEBOT3_MODEL=burger
+export ROS_DOMAIN_ID=0
+
+check the saved map and RViz config file in terminal 2,
+ls -lh room.pgm room.yaml pathPlanner_sim.rviz
+grep '^origin:' room.yaml
+
+For the house map used in the prelab runs, expect:
+origin: [-7.750, -4.244, 0]
+
+
+Terminal 1 - launch gazebo, wait for it to load 
+ros2 launch turtlebot3_gazebo turtlebot3_house.launch.py
+Terminal 2 - saved map, leave this running 
+"$HOME/.venvs/mte544/bin/python" mapPublisher.py --ros-args -p use_sim_time:=true
+
+Terminal 3 - Rviz
+rviz2 -d pathPlanner_sim.rviz --ros-args -p use_sim_time:=true
+
+In Rviz, when launches, check that red is in right place. Set these configurations 
+     rviz2 -d pathPlanner_sim.rviz --ros-args -p use_sim_time:=true
+
+     Global Options > Fixed Frame         map
+     Map > Topic                          /customMap
+     RobotModel > Description Source       Topic
+     RobotModel > Description Topic        /robot_description
+       Description Topic > Durability    Transient Local
+     -- add laser scan topic with add
+     LaserScan > Topic                    /scan
+       Topic > Reliability Policy         Best Effort
+     Path > Topic                         /designedPath
+     Views > Type                         TopDownOrtho
+   Add a missing display with Add > By display type. uncheck
+   Axes to hide the large arrows at the map origin. If the goal tool's
+   topic was changed, set 2D Goal Pose to /goal_pose in Tool Properties.
+
+
+move away from unmapped spawn point, use teleop keyboard. if decisions.py is running, stop it 
+Terminal 4 - teleop/decisions.py 
+
+ros2 run turtlebot3_teleop teleop_keyboard
+
+navigate from the default with w, to creep like 50 cm ahead, known good starting spot
+check where landed 
+
+ros2 topic echo /odom --once --field pose.pose.position 
+
+then start decisions.py 
+
+"$HOME/.venvs/mte544/bin/python" decisions.py --heuristic Euclidean
+
+   Wait for the prompt about choosing a goal. In RViz, select
+   2D Goal Pose. Press the left mouse button where we want the robot
+   to end up, drag a little to draw the arrow (this is heading), and release to send.
+   The point where you pressed sets the destination. The planner uses
+   its x and y coordinates. Try a short goal in clear mapped space
+   before sending a longer one. Watch for the path in RViz and
+   'reached goal' in terminal 4.
+
+   For a fresh start, stop the planner, then use Gazebo > Edit >
+   Reset Model Poses (Ctrl+Shift+R). repeat teleop keyboard moving off unspaned ppoint when doing this 
+
