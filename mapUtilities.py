@@ -140,12 +140,15 @@ class mapManipulator(Node):
         c, s = math.cos(self.yaw), math.sin(self.yaw)
         return self.o_x + c * x - s * y, self.o_y + s * x + c * y
 
-    def position_2_cell(self, pos):
+    def position_in_grid(self, pos):
+        """Return continuous grid coordinates measured from the lower left."""
         dx, dy = pos[0] - self.o_x, pos[1] - self.o_y
         c, s = math.cos(self.yaw), math.sin(self.yaw)
-        col = floor((c * dx + s * dy) / self.res)
-        row_from_bottom = floor((-s * dx + c * dy) / self.res)
-        return col, self.height - 1 - row_from_bottom
+        return (c * dx + s * dy) / self.res, (-s * dx + c * dy) / self.res
+
+    def position_2_cell(self, pos):
+        col, row_from_bottom = self.position_in_grid(pos)
+        return floor(col), self.height - 1 - floor(row_from_bottom)
 
     def make_likelihood_field(self):
         

@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from math import sqrt
 
 
+BLOCKED_CELL_COST = 0.8
+
+
 class Node:
     """
         A node class for A* Pathfinding
@@ -140,7 +143,7 @@ def search(maze, start, end, heuristic="euclidean"):
         x, y = position
         if not (0 <= x < no_rows and 0 <= y < no_columns):
             return []
-        if maze[x, y] > 0.8:
+        if maze[x, y] > BLOCKED_CELL_COST:
             return []
 
     # Loop until you find the end
@@ -192,7 +195,7 @@ def search(maze, start, end, heuristic="euclidean"):
 
             # TODO PART 4 Make sure within range (check if within maze boundary)          
             # Make sure walkable terrain
-            if maze[node_position[0], node_position[1]] > 0.8:
+            if maze[node_position[0], node_position[1]] > BLOCKED_CELL_COST:
                 continue
 
             # Create new node

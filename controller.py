@@ -42,14 +42,19 @@ class controller:
 
 class trajectoryController(controller):
 
-    def __init__(self, klp=0.2, klv=0.2, kli=0.2, kap=0.2, kav=0.2, kai=0.2, lookAhead=1.0, targetVel=1.0):
+    def __init__(self, klp=0.2, klv=0.2, kli=0.2, kap=0.2, kav=0.2, kai=0.2,
+                 lookAhead=1.0, targetVel=1.0, *, is_segment_traversable=None):
         super().__init__(klp, klv, kli, kap, kav, kai)
         self.lookAhead=lookAhead
         self.targetVelocity=targetVel
+        self.is_segment_traversable = is_segment_traversable
     
     def vel_request(self, pose, listGoals, status):
+        """Return the requested velocities, or None if every target is blocked."""
         
-        goal=self.lookFarFor(pose, listGoals)
+        goal = self.lookFarFor(pose, listGoals)
+        if goal is None:
+            return None
         
         finalGoal=listGoals[-1]
         
@@ -71,12 +76,20 @@ class trajectoryController(controller):
 
 
     def lookFarFor(self, pose, listGoals):
-        
-        poseArray=np.array([pose[0], pose[1]]) 
-        listGoalsArray=np.array(listGoals)
+        if len(listGoals) == 0:
+            return None
 
-        distanceSquared=np.sum((listGoalsArray-poseArray)**2,
-                               axis=1)
-        closestIndex=np.argmin(distanceSquared)
+        position = pose[:2]
+        offsets = np.asarray(listGoals) - position
+        closest = np.argmin(np.sum(offsets**2, axis=1))
+        last = len(listGoals) - 1
+        farthest = min(closest + 3, last)
+        if self.is_segment_traversable is None:
+            return listGoals[farthest]
 
-        return listGoals[ min(closestIndex + 3, len(listGoals) - 1) ]
+        nearest = min(closest + 1, last)
+        for index in range(farthest, nearest - 1, -1):
+            target = listGoals[index]
+            if self.is_segment_traversable(position, target):
+                return target
+        return None

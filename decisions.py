@@ -55,16 +55,17 @@ class decision_maker(Node):
 
         
         elif motion_type==TRAJECTORY_PLANNER:
-            # TODO PART 5 Put the gains that you concluded from lab 2
-            # Initial proportional gains for simulation; tune during testing.
-            self.controller = trajectoryController(
-                klp=0.2, klv=0.0, kli=0.0,
-                kap=0.8, kav=0.0, kai=0.0
-            )     
             self.planner = planner(
                 TRAJECTORY_PLANNER,
                 mapName="room",
                 heuristic=heuristic
+            )
+            # TODO PART 5 Put the gains that you concluded from lab 2
+            # Initial proportional gains for simulation; tune during testing.
+            self.controller = trajectoryController(
+                klp=0.2, klv=0.0, kli=0.0,
+                kap=0.8, kav=0.0, kai=0.0,
+                is_segment_traversable=self.planner.is_segment_traversable
             )
         
         else:
@@ -137,7 +138,15 @@ class decision_maker(Node):
             return
 
         target = self.goal[-1] if self.motion_type == POINT_PLANNER else self.goal
-        velocity, yaw_rate = self.controller.vel_request(pose, target, True)
+        command = self.controller.vel_request(pose, target, True)
+        if command is None:
+            self.publisher.publish(vel_msg)
+            self.goal = None
+            self.publishPathOnRviz2([])
+            self.get_logger().warning("Path ahead is blocked. Stopped. Send a new goal to replan.")
+            return
+
+        velocity, yaw_rate = command
         # Limit forward speed and turning speed in both directions.
         vel_msg.linear.x = float(max(0.0, min(0.1, velocity)))
         vel_msg.angular.z = float(max(-0.5, min(0.5, yaw_rate)))

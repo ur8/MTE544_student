@@ -1,6 +1,8 @@
 
-from mapUtilities import *
-from a_star import *
+from math import floor
+
+from a_star import BLOCKED_CELL_COST, search
+from mapUtilities import mapManipulator
 
 POINT_PLANNER=0; TRAJECTORY_PLANNER=1
 
@@ -46,6 +48,42 @@ class planner:
         unknown = self.m_utilites.getMap() == 205
         self.costMap[unknown] = 1.0
         
+
+    def is_segment_traversable(self, start, end):
+        """Check every cost-map cell touched by a world-coordinate segment."""
+        if self.costMap is None:
+            return False
+
+        x0, y0 = self.m_utilites.position_in_grid(start)
+        x1, y1 = self.m_utilites.position_in_grid(end)
+        if y0 > y1:
+            x0, y0, x1, y1 = x1, y1, x0, y0
+
+        height, width = self.costMap.shape
+        dx, dy = x1 - x0, y1 - y0
+        # Include both sides when the segment touches a grid edge or corner.
+        tolerance = 1e-9
+        first_row, last_row = floor(y0 - tolerance), floor(y1 + tolerance)
+        if first_row < 0 or last_row >= height:
+            return False
+
+        for row in range(first_row, last_row + 1):
+            # Clip the segment to this row and check its full span of columns.
+            if dy > tolerance:
+                enter = max(0.0, (row - tolerance - y0) / dy)
+                leave = min(1.0, (row + 1 + tolerance - y0) / dy)
+                enter_x, leave_x = x0 + dx * enter, x0 + dx * leave
+            else:
+                enter_x, leave_x = x0, x1
+
+            first_col = floor(min(enter_x, leave_x) - tolerance)
+            last_col = floor(max(enter_x, leave_x) + tolerance)
+            if first_col < 0 or last_col >= width:
+                return False
+            costs = self.costMap[height - 1 - row, first_col:last_col + 1]
+            if (costs > BLOCKED_CELL_COST).any():
+                return False
+        return True
 
     def trajectory_planner(self, startPoseCart, endPoseCart):
 
