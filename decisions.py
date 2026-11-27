@@ -128,7 +128,12 @@ class decision_maker(Node):
             return
 
         vel_msg = Twist()
-        if calculate_linear_error(pose, self.goal[-1]) < self.reachThreshold:
+        final_waypoint = self.goal[-1]
+        within_goal_tolerance = calculate_linear_error(pose, final_waypoint) < self.reachThreshold
+        if within_goal_tolerance and (
+            self.motion_type == POINT_PLANNER
+            or self.planner.is_segment_traversable(pose[:2], final_waypoint)
+        ):
             self.publisher.publish(vel_msg)
             self.goal = None
             self.controller.PID_angular.logger.save_log()
@@ -137,7 +142,7 @@ class decision_maker(Node):
             print("waiting for the new position input, use 2D nav goal on map")
             return
 
-        target = self.goal[-1] if self.motion_type == POINT_PLANNER else self.goal
+        target = final_waypoint if self.motion_type == POINT_PLANNER else self.goal
         command = self.controller.vel_request(pose, target, True)
         if command is None:
             self.publisher.publish(vel_msg)

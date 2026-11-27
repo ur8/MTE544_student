@@ -1,3 +1,21 @@
+In-lab robot
+
+The default room.pgm and room.yaml are the corrected Run 2 lab map.
+Run from this folder with the robot's assigned ROS_DOMAIN_ID.
+
+    python3 mapPublisher.py
+    rviz2 -d pathPlanner.rviz
+    python3 decisions.py --heuristic euclidean
+
+Use separate sourced terminals. Use --heuristic manhattan for the other run.
+The saved-map publisher supplies an identity map-to-odom transform. Stop SLAM
+before starting the saved-map publisher, and check the robot and laser scan
+align with the saved map in RViz before sending a goal.
+
+Gazebo simulation
+
+The steps below require the original simulation room.pgm and room.yaml.
+Use a separate copy of this folder with that map pair for simulation.
 
 create 4 terminals
 Paste this into all terminals for setup. 
