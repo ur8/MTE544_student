@@ -45,19 +45,19 @@ In Rviz, when launches, check that red is in right place. Set these configuratio
    topic was changed, set 2D Goal Pose to /goal_pose in Tool Properties.
 
 
-move away from unmapped spawn point, use teleop keyboard. if decisions.py is running, stop it 
-Terminal 4 - teleop/decisions.py 
+Terminal 4 - planner
+The corrected map conversion puts the default house spawn in a free cell.
+If you need to reposition the robot, stop the planner with Ctrl+C, then run:
 
 ros2 run turtlebot3_teleop teleop_keyboard
 
-navigate from the default with w, to creep like 50 cm ahead, known good starting spot
-check where landed 
+Tap W to creep forward, press Space to stop, then Ctrl+C to exit teleop.
 
-ros2 topic echo /odom --once --field pose.pose.position 
+ros2 topic echo /odom --once --field pose.pose.position
 
-then start decisions.py 
+Start the planner:
 
-"$HOME/.venvs/mte544/bin/python" decisions.py --heuristic Euclidean
+"$HOME/.venvs/mte544/bin/python" decisions.py --heuristic euclidean --ros-args -p use_sim_time:=true
 
    Wait for the prompt about choosing a goal. In RViz, select
    2D Goal Pose. Press the left mouse button where we want the robot
@@ -68,5 +68,7 @@ then start decisions.py
    'reached goal' in terminal 4.
 
    For a fresh start, stop the planner, then use Gazebo > Edit >
-   Reset Model Poses (Ctrl+Shift+R). repeat teleop keyboard moving off unspaned ppoint when doing this 
+   Reset Model Poses (Ctrl+Shift+R), then restart the planner.
+   If odometry stops updating or resets, the planner cancels the route.
+   Send a fresh goal after odometry returns.
 

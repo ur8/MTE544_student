@@ -1,5 +1,6 @@
 import sys
 import time
+from math import isfinite
 from utilities import Logger
 
 from rclpy.time import Time
@@ -36,6 +37,9 @@ class localization(Node):
         
         self.loc_logger=Logger( loggerName , loggerHeaders)
         self.pose=None
+        self.last_odom_stamp = None
+        self.last_odom_update = None
+        self.odom_epoch = 0
         
         if type==rawSensors:
             self.initRawSensors();
@@ -103,16 +107,28 @@ class localization(Node):
                             odom_msg.header.stamp])
         
     def odom_callback(self, pose_msg):
-        
-        self.pose=[ pose_msg.pose.pose.position.x,
-                    pose_msg.pose.pose.position.y,
-                    euler_from_quaternion(pose_msg.pose.pose.orientation),
-                    pose_msg.header.stamp]
+        stamp = pose_msg.header.stamp
+        stamp_key = (stamp.sec, stamp.nanosec)
+        if stamp_key == self.last_odom_stamp:
+            return  # A repeated stamp does not refresh the watchdog.
+        if self.last_odom_stamp is not None and stamp_key < self.last_odom_stamp:
+            self.odom_epoch += 1  # A clock reset invalidates the active route.
+        self.last_odom_stamp = stamp_key
+        self.pose = [pose_msg.pose.pose.position.x,
+                     pose_msg.pose.pose.position.y,
+                     euler_from_quaternion(pose_msg.pose.pose.orientation),
+                     stamp]
+        self.last_odom_update = time.monotonic() if all(map(isfinite, self.pose[:3])) else None
         
         #self.loc_logger.log_values([self.pose[0], self.pose[1], self.pose[2], Time.from_msg(self.pose[3]).nanoseconds])
 
         
     def getPose(self):
+        return self.pose
+
+    def get_fresh_odom_pose(self, timeout):
+        if self.last_odom_update is None or time.monotonic() - self.last_odom_update >= timeout:
+            return None
         return self.pose
 
 

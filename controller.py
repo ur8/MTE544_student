@@ -1,5 +1,6 @@
 
 from pid import PID_ctrl
+from math import pi
 
 import numpy as np
 
@@ -8,6 +9,7 @@ from utilities import euler_from_quaternion, calculate_angular_error, calculate_
 M_PI=3.1415926535
 
 P=0; PD=1; PI=2; PID=3
+TURN_IN_PLACE_ANGLE = pi / 4
 
 class controller:
     
@@ -27,6 +29,9 @@ class controller:
         
         linear_vel=self.PID_linear.update([e_lin, pose[3]], status)
         angular_vel=self.PID_angular.update([e_ang, pose[3]], status) 
+
+        # Slow down through turns and face sharp turns before moving forward.
+        linear_vel *= max(0.0, 1.0 - abs(e_ang) / TURN_IN_PLACE_ANGLE)
 
         linear_vel = 0.5 if linear_vel > 1.0 else linear_vel
         angular_vel= 0.5 if angular_vel > 1.0 else angular_vel
@@ -55,6 +60,8 @@ class trajectoryController(controller):
         
         linear_vel=self.PID_linear.update([e_lin, pose[3]], status)
         angular_vel=self.PID_angular.update([e_ang, pose[3]], status) 
+
+        linear_vel *= max(0.0, 1.0 - abs(e_ang) / TURN_IN_PLACE_ANGLE)
 
         linear_vel = 0.1 if linear_vel > 0.1 else linear_vel
         angular_vel= 0.5 if angular_vel > 0.5 else angular_vel

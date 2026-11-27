@@ -4,7 +4,7 @@ from nav_msgs.msg import OccupancyGrid
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from geometry_msgs.msg import TransformStamped
 
-from mapUtilities import *
+from planner import TRAJECTORY_PLANNER, planner
 
 
 def timerCallback():
@@ -14,7 +14,6 @@ if __name__ == "__main__":
 
     rclpy.init()
 
-    map_ = mapManipulator()
 
     node = Node("mapPublisher")
 
@@ -42,9 +41,9 @@ if __name__ == "__main__":
     # Send the transform
     static_broadcaster.sendTransform(static_transform_stamped)
 
-    map_.make_likelihood_field()
-
-    occGrid = map_.to_message()
+    display_planner = planner(TRAJECTORY_PLANNER)
+    display_planner.initTrajectoryPlanner()
+    occGrid = display_planner.m_utilites.to_message()
 
     node.create_timer(1.0, timerCallback)
 

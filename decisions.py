@@ -1,30 +1,26 @@
 
 
+import argparse
 import sys
+from math import isfinite
 
-
-from utilities import euler_from_quaternion, calculate_angular_error, calculate_linear_error
-from pid import PID_ctrl
-
-from rclpy import init, spin, spin_once
-from rclpy.node import Node
-from geometry_msgs.msg import Twist
-
-
-from rclpy.qos import QoSProfile
-from nav_msgs.msg import Odometry as odom
-
-from localization import localization, rawSensors, kalmanFilter
-
-from planner import TRAJECTORY_PLANNER, POINT_PLANNER, planner
-from controller import controller, trajectoryController
-
-
-from geometry_msgs.msg import PoseStamped
-
-
+from geometry_msgs.msg import PoseStamped, Twist
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+from rclpy import init, try_shutdown
+from rclpy.clock import Clock, ClockType
+from rclpy.executors import SingleThreadedExecutor
+from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
+from rclpy.utilities import remove_ros_args
+
+from controller import controller, trajectoryController
+from localization import localization, rawSensors
+from planner import POINT_PLANNER, TRAJECTORY_PLANNER, planner
+from utilities import calculate_linear_error
+
+
+ODOM_TIMEOUT = 0.5
+
 
 class decision_maker(Node):
     
@@ -41,6 +37,7 @@ class decision_maker(Node):
         self.pathPublisher = self.create_publisher(Path, '/designedPath', 10)
         
         publishing_period=1/rate
+        self.motion_type = motion_type
 
         # TODO PART 5 choose your threshold
         # Stop when within 10 cm of the final waypoint.
@@ -76,7 +73,9 @@ class decision_maker(Node):
 
         self.goal = None
 
-        self.create_timer(publishing_period, self.timerCallback)
+        # Keep the odometry timeout active even when Gazebo pauses its clock.
+        self.create_timer(publishing_period, self.timerCallback,
+                          clock=Clock(clock_type=ClockType.STEADY_TIME))
 
 
         print("waiting for your input position, use 2D nav goal in rviz2")
@@ -86,85 +85,64 @@ class decision_maker(Node):
 
     # This is for the rviz2 interface
     def designPathFor(self, msg: PoseStamped):
-        # Process available odometry without blocking.
-        spin_once(self.localizer, timeout_sec=0.0)
-
-        pose = self.localizer.getPose()
-        if pose is None:
-            print("waiting for odom msgs ....")
-            return
-
         # Stop the previous motion before planning a new route.
         self.publisher.publish(Twist())
         self.goal = None
         self.publishPathOnRviz2([])
 
-        path = self.planner.plan(
-            [pose[0], pose[1]],
-            [msg.pose.position.x, msg.pose.position.y]
-        )
+        pose = self.localizer.get_fresh_odom_pose(ODOM_TIMEOUT)
+        if pose is None:
+            self.get_logger().warning("Waiting for fresh odometry. Send a new goal when odometry returns.")
+            return
 
+        goal_xy = [msg.pose.position.x, msg.pose.position.y]
+        if msg.header.frame_id not in ("", "map") or not all(map(isfinite, goal_xy)):
+            self.get_logger().warning("Expected a finite goal in the map frame.")
+            return
+
+        path = self.planner.plan(pose[:2], goal_xy)
         if not path:
-            print("No valid path found. Choose a goal in mapped free space.")
+            print("No valid path found. Check that the start and goal are connected in mapped free space.")
             return
 
         # Start each route with fresh controller error history.
         self.controller.PID_linear.history.clear()
         self.controller.PID_angular.history.clear()
+        self.goal_odometry_epoch = self.localizer.odom_epoch
 
-        self.goal = path
-        self.publishPathOnRviz2(path)
+        # Store waypoint lists for RViz and the arrival check in both modes.
+        self.goal = [path] if self.motion_type == POINT_PLANNER else path
+        self.publishPathOnRviz2(self.goal)
 
-    
     def timerCallback(self):
-        
-        # Keep the control timer responsive when no new odometry is available.
-        spin_once(self.localizer, timeout_sec=0.0)
-
-        if self.localizer.getPose() is  None:
-            print("waiting for odom msgs ....")
-            return
-        
-        
-        vel_msg=Twist()
-        
         if self.goal is None:
             return
-        
-        if type(self.goal) == list:
-            reached_goal=True if calculate_linear_error(self.localizer.getPose(), self.goal[-1]) <self.reachThreshold else False
-        else: 
-            reached_goal=True if calculate_linear_error(self.localizer.getPose(), self.goal) <self.reachThreshold else False
 
+        pose = self.localizer.get_fresh_odom_pose(ODOM_TIMEOUT)
+        if pose is None or self.localizer.odom_epoch != self.goal_odometry_epoch:
+            self.publisher.publish(Twist())
+            self.goal = None
+            self.publishPathOnRviz2([])
+            self.get_logger().warning("Odometry lost or reset. Stopped. Send a new goal to resume.")
+            return
 
-
-
-        if reached_goal:
-            print("reached goal")
+        vel_msg = Twist()
+        if calculate_linear_error(pose, self.goal[-1]) < self.reachThreshold:
             self.publisher.publish(vel_msg)
-            
+            self.goal = None
             self.controller.PID_angular.logger.save_log()
             self.controller.PID_linear.logger.save_log()
-
-
-            
-            self.goal = None
+            print("reached goal")
             print("waiting for the new position input, use 2D nav goal on map")
-
             return
-        
-        velocity, yaw_rate = self.controller.\
-            vel_request(self.localizer.getPose(), self.goal, True)
 
-                
+        target = self.goal[-1] if self.motion_type == POINT_PLANNER else self.goal
+        velocity, yaw_rate = self.controller.vel_request(pose, target, True)
         # Limit forward speed and turning speed in both directions.
         vel_msg.linear.x = float(max(0.0, min(0.1, velocity)))
         vel_msg.angular.z = float(max(-0.5, min(0.5, yaw_rate)))
-        
         self.publisher.publish(vel_msg)
         self.publishPathOnRviz2(self.goal)
-
-
 
     def publishPathOnRviz2(self, path):
 
@@ -190,43 +168,34 @@ class decision_maker(Node):
 
         self.pathPublisher.publish(Path_)
 
-import argparse
-def main(args=None):
-    
-    
-    init()
-    
-    odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
-    
-    if args.motion == "point":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=POINT_PLANNER)
-    elif args.motion == "trajectory":
-        DM = decision_maker(
-            Twist, "/cmd_vel", 10,
-            motion_type=TRAJECTORY_PLANNER,
-            heuristic=args.heuristic
-        )
-    else:
-        print("invalid motion type", file=sys.stderr)
 
+def main(args):
+    # Keep ROS active through Ctrl+C so the final zero velocity can be sent.
+    init(signal_handler_options=SignalHandlerOptions.NO)
+    motion_type = POINT_PLANNER if args.motion == "point" else TRAJECTORY_PLANNER
+    dm = decision_maker(Twist, "/cmd_vel", 10, motion_type=motion_type, heuristic=args.heuristic)
 
-
+    executor = SingleThreadedExecutor()
+    executor.add_node(dm.localizer)
+    executor.add_node(dm)
     try:
-        spin(DM)
-    except SystemExit:
-        print(f"reached there successfully {DM.localizer.pose}")
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        dm.publisher.publish(Twist())
+        executor.shutdown()
+        dm.localizer.destroy_node()
+        dm.destroy_node()
+        try_shutdown()
 
 
-
-
-if __name__=="__main__":
-    argParser=argparse.ArgumentParser(description="point or trajectory") 
-    argParser.add_argument("--motion", type=str, default="trajectory")
+if __name__ == "__main__":
+    argParser = argparse.ArgumentParser(description="point or trajectory")
+    argParser.add_argument("--motion", choices=["point", "trajectory"], default="trajectory")
     argParser.add_argument(
         "--heuristic",
         choices=["manhattan", "euclidean"],
         default="euclidean"
     )
-
-    args = argParser.parse_args()
-    main(args)
+    main(argParser.parse_args(remove_ros_args(sys.argv)[1:]))

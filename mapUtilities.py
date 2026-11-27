@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
-import numpy as np 
+import numpy as np
+import yaml
 
 from sensor_msgs.msg import LaserScan
 from math import floor
@@ -49,7 +50,7 @@ class mapManipulator(Node):
         
 
         self.image_array = np.array(pixels).reshape((height, width))
-        self.o_x, self.o_y, self.res, self.thresh = self.read_description(filenameYaml)
+        self.o_x, self.o_y, self.yaw, self.res, self.thresh = self.read_description(filenameYaml)
 
         self.laser_sig=laser_sig
         
@@ -118,29 +119,12 @@ class mapManipulator(Node):
 
 
     def read_description(self, filenameYAML):
-        import re
-
-        # Open and read the YAML file
         with open(filenameYAML, 'r') as file:
-            yaml_content = file.readlines()
-
-            # Extract the desired fields
-            threshold = None
-            origin_x = None
-            origin_y = None
-            resolution = None
-
-            for line in yaml_content:
-                if 'occupied_thresh' in line:
-                    threshold = float(re.findall(r'\d+\.\d+', line)[0])
-                elif 'origin' in line:
-                    origin_values = re.findall(r'-?\d+\.\d+', line)
-                    origin_x = float(origin_values[0])
-                    origin_y = float(origin_values[1])
-                elif 'resolution' in line:
-                    resolution = float(re.findall(r'\d+\.\d+', line)[0])
-        return origin_x, origin_y, resolution, threshold
-
+            description = yaml.safe_load(file)
+        origin_x, origin_y, yaw = map(float, description['origin'])
+        resolution = float(description['resolution'])
+        threshold = float(description['occupied_thresh'])
+        return origin_x, origin_y, yaw, resolution, threshold
 
     def getOrigin(self):
         return np.array([self.o_x, self.o_y])
@@ -149,14 +133,19 @@ class mapManipulator(Node):
         return self.res
     
     def cell_2_position(self, pix):
-        i,j= pix
-        return self.o_x + i*self.getResolution(),    (self.height - j) * self.getResolution()  + self.o_y  
-    
-    
-    def position_2_cell(self, pos):
-        x,y = pos
-        return floor( (-self.o_x + x)/self.getResolution()), -floor( -self.height + (-self.o_y + y)/self.getResolution() )
+        col, row = pix
+        # PGM rows count down from the top. Return the center of the cell.
+        x = (col + 0.5) * self.res
+        y = (self.height - row - 0.5) * self.res
+        c, s = math.cos(self.yaw), math.sin(self.yaw)
+        return self.o_x + c * x - s * y, self.o_y + s * x + c * y
 
+    def position_2_cell(self, pos):
+        dx, dy = pos[0] - self.o_x, pos[1] - self.o_y
+        c, s = math.cos(self.yaw), math.sin(self.yaw)
+        col = floor((c * dx + s * dy) / self.res)
+        row_from_bottom = floor((-s * dx + c * dy) / self.res)
+        return col, self.height - 1 - row_from_bottom
 
     def make_likelihood_field(self):
         
@@ -166,14 +155,14 @@ class mapManipulator(Node):
         
         
 
-        indices = np.where(image_array < 10)
-        
-        occupied_points = [self.cell_2_position([i, j]) for i, j in zip(indices[0], indices[1])]
-        all_positions = [self.cell_2_position([i, j]) for i in range(image_array.shape[0]) for j in range(image_array.shape[1])]
-
-        kdt=KDTree(occupied_points)
-
-        dists=kdt.query(all_positions, k=1)[0][:]
+        rows, cols = np.where(image_array < 10)
+        # A step between adjacent grid cells is self.res metres.
+        occupied_cells = np.column_stack((rows, cols))
+        all_cells = np.indices(image_array.shape).reshape(2, -1).T
+        if len(occupied_cells):
+            dists = KDTree(occupied_cells).query(all_cells, k=1)[0] * self.res
+        else:
+            dists = np.full((image_array.size, 1), np.inf)
         probabilities=np.exp( -(dists**2) / (2*self.laser_sig**2))
         
         likelihood_field=probabilities.reshape(image_array.shape)
@@ -182,7 +171,7 @@ class mapManipulator(Node):
         
         self.likelihood_img=likelihood_field_img
         
-        self.occ_points=np.array(occupied_points)
+        self.occ_points = np.asarray(self.getAllObstacles()).reshape(-1, 2)
         
                 
         #self.plot_pgm_image(likelihood_field_img)
@@ -212,47 +201,24 @@ class mapManipulator(Node):
         likelihoodField = self.getLikelihoodField()
 
         grid.info.resolution = self.getResolution()  # Set the resolution (m/cell)
-        grid.info.width = self.height
-        grid.info.height = self.width
-        grid.info.origin = Pose()  # Set the origin of the map (geometry_msgs/Pose)
-        
-        gridOrigin = self.cell_2_position([0, self.height])
-        
+        grid.info.width = self.width
+        grid.info.height = self.height
+        grid.info.origin = Pose()
+        grid.info.origin.position.x, grid.info.origin.position.y = self.o_x, self.o_y
+        grid.info.origin.orientation.w = math.cos(self.yaw / 2)
+        grid.info.origin.orientation.z = math.sin(self.yaw / 2)
 
-        grid.info.origin.orientation.w = np.cos(-np.pi/4)
-        grid.info.origin.orientation.z = np.sin(-np.pi/4)
-        offset = -self.height*self.getResolution()
-
-
-
-        grid.info.origin.position.x, grid.info.origin.position.y = self.getOrigin()[0], +self.getOrigin()[1] - offset
-
-
-        #grid.info.origin.orientation.w = np.cos(np.pi/2)
-        #grid.info.origin.orientation.z = np.sin(np.pi/2)
-        # Flatten the likelihood field and scale it to [0, 100], set unknown as -1
-        
-        normalized_likelihood = np.clip(likelihoodField.T * 100, 0, 100)
-        
-        # Convert to integers and ensure values are within the range [-128, 127]
-        # In ROS, 0 means unknown, so we remap our values from [0, 100] to [1, 101]
-        # and then subtract 1 to have [0, 100] for the message
-        
-        grid.data = [int(value) for value in normalized_likelihood.flatten()]
-        grid.data = list(grid.data)
-
-
+        values = np.ceil(likelihoodField * 100).astype(int)
+        values[self.image_array == 205] = -1  # ROS OccupancyGrid unknown value.
+        grid.data = np.flipud(values).ravel().tolist()  # ROS rows start at the bottom.
         return grid
 
+    def calculate_score(self, x, y):
+        col, row = self.position_2_cell((x, y))
+        if 0 <= col < self.width and 0 <= row < self.height:
+            return self.likelihood_field[row, col]
+        return 0
 
-    def calculate_score(self,x,y):
-        try:
-            return self.likelihood_field[self.position_2_cell(x,y)]
-        except IndexError:
-            return 0
-        
-        
-        
     def map_localation_query(self, laser_msg: LaserScan):
         
         # this part was for kidnapping section of the particle filter algorithm
